@@ -17,7 +17,7 @@ struct visionOutput {
 	//distance from the camera to the closest point on a horizontal line at the height of the camera crossing directly through the tapes.
 	const inch yDistance;
 	
-	//the angle that the robot is from directly facing the tapes.
+	//the angle that the robot is from directly facing the tapes. (positive clockwise, negative counterclockwise)
 	const radian robotAngle;
 };
 

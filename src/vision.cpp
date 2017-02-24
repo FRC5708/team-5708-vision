@@ -74,6 +74,8 @@ visionOutput gearTarget() {
 		rects.push_back(cv::boundingRect(*i));
 	}
 	
+	std::vector<visionOutput> candidates(pow(rects.size(), 2));
+	
 	// loop through all rects.
 	for (auto iP = rects.begin(); iP != rects.end(); ++iP) {
 		for (auto jP = rects.begin(); jP != rects.end(); ++jP) {
@@ -91,14 +93,22 @@ visionOutput gearTarget() {
 				
 				// if camera height is within tape bounds
 				inch distance = (groundToTapeTop*tan(height)) / (1.0 - tapeBottomToCamera*cameraToTapeTop);
-				//if camera is below tapes (never mind, doesn't work, above does, even with low cam)
+				//if camera is below tapes (never mind, doesn't work, above does, even with low cam) ??
 				inch distance2 = (tapeHeight*tan(height)) / (1.0 + tapeBottomToCamera*cameraToTapeTop);
 				
 				printf("distances: %f %f\n", distance, distance2);
 				
-				//radian viewAngle = M_PI - width - asin(sin(width)*(tapeApart/2.0)*distance);
+				inch xDistance = cos(width/2)*distance;
+				inch yDistance = sin(width/2)*distance;
 				
-				//printf("angle: %f\n", viewAngle);
+				//               midpoint of tapes                self-explainatory        center=0
+				radian angle = ((i.x + (j.x + j.width)) / 2.0 / (double)imageSize.width - 0.5) * 2.0 * cameraFOV;
+				
+				
+				double nanCheck = distance * xDistance * yDistance * angle;
+				if (!isnan(nanCheck) && !isinf(nanCheck)) {
+					candidates.push_back({distance, xDistance, yDistance, angle});
+				}
 			}
 		}
 	}
