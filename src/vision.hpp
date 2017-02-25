@@ -1,6 +1,9 @@
 #ifndef vision_hpp
 #define vision_hpp
 
+#include <opencv2/opencv.hpp>
+#include "contours processing.hpp"
+
 typedef double inch;
 typedef double radian;
 
@@ -19,6 +22,12 @@ struct visionOutput {
 	
 	//the angle that the robot is from directly facing the tapes. (positive clockwise, negative counterclockwise)
 	const radian robotAngle;
+	
+	// how far the robot is from straight in front of the tapes.
+	const radian viewAngle;
+	
+	cv::Rect leftRect;
+	cv::Rect rightRect;
 };
 
 visionOutput gearTarget();

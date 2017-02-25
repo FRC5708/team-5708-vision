@@ -1,9 +1,7 @@
 #include "vision.hpp"
 //#include <opencv.hpp>
-#include <opencv2/opencv.hpp>
 #include <algorithm>
 #include <math.h>
-#include "contours processing.hpp"
 #include "misc.hpp"
 //#include <opencv2/highgui/highgui.hpp>
 //#include <opencv2/imgproc/imgproc.hpp>
@@ -47,7 +45,7 @@ inline bool around(int val1, int val2, int tolerance) {
 }
 
 //CONSTANTS
-inch cameraHeight = 8; // need exact value
+inch cameraHeight = 9.5; // need exact value
 inch tapeBottomHeight = 10.75;
 inch tapeHeight = 5;
 inch tapeWidth = 2;
@@ -74,7 +72,7 @@ visionOutput gearTarget() {
 		rects.push_back(cv::boundingRect(*i));
 	}
 	
-	std::vector<visionOutput> candidates(pow(rects.size(), 2));
+	std::vector<visionOutput> candidates;
 	
 	// loop through all rects.
 	for (auto iP = rects.begin(); iP != rects.end(); ++iP) {
@@ -92,7 +90,7 @@ visionOutput gearTarget() {
 				radian height = (i.height + j.height) / 2.0 / (double)imageSize.height * cameraFOV;
 				
 				// if camera height is within tape bounds
-				inch distance = (groundToTapeTop*tan(height)) / (1.0 - tapeBottomToCamera*cameraToTapeTop);
+				inch distance = (tapeHeight*tan(height)) / (1.0 - tapeBottomToCamera*cameraToTapeTop);
 				//if camera is below tapes (never mind, doesn't work, above does, even with low cam) ??
 				inch distance2 = (tapeHeight*tan(height)) / (1.0 + tapeBottomToCamera*cameraToTapeTop);
 				
@@ -102,18 +100,44 @@ visionOutput gearTarget() {
 				inch yDistance = sin(width/2)*distance;
 				
 				//               midpoint of tapes                self-explainatory        center=0
-				radian angle = ((i.x + (j.x + j.width)) / 2.0 / (double)imageSize.width - 0.5) * 2.0 * cameraFOV;
+				radian robotAngle = ((i.x + (j.x + j.width)) / 2.0 / (double)imageSize.width - 0.5) * 2.0 * cameraFOV;
+				
+				radian viewAngle = cos(yDistance/distance);
 				
 				
-				double nanCheck = distance * xDistance * yDistance * angle;
-				if (!isnan(nanCheck) && !isinf(nanCheck)) {
-					candidates.push_back({distance, xDistance, yDistance, angle});
+				double nanCheck = distance * xDistance * yDistance * robotAngle;
+				if (!isnan(nanCheck) && !isinf(nanCheck) &&
+					distance < 1.5 &&
+						around(robotAngle, 0, cameraFOV/2)) {
+					
+					candidates.push_back({distance, xDistance, yDistance, robotAngle, viewAngle, i, j});
 				}
 			}
 		}
 	}
-	// filter out nonsensical answers (todo)
+	// improve this later
 	
+	double bestSense = -1000;
+	visionOutput* sensiestOutput = {0};
+	
+	FOREACH(candidates, i) {
+		double senseScore = 0;
+		
+		radian heightDifference = i->leftRect.height - i->rightRect.height / (double)imageSize.height * cameraFOV;
+		radian widthDifference = i->leftRect.width - i->rightRect.width / (double)imageSize.width * cameraFOV;
+		
+		senseScore -= heightDifference / tapeHeight + widthDifference /tapeWidth;
+		
+		
+		if (senseScore > bestSense) {
+			bestSense = senseScore;
+			sensiestOutput = &*i;
+		}
+	}
+	std::cout << sensiestOutput;
+	if (sensiestOutput) {
+		return *sensiestOutput;
+	}
 	
 	debugRectDisplay(rects, imageSize);
 	
