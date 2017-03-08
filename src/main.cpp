@@ -1,5 +1,5 @@
 #include "vision.hpp"
-#include "networking.hpp"
+#include <networktables/NetworkTable.h>
 #include "misc.hpp"
 #include <opencv2/opencv.hpp>
 #include <unistd.h>
@@ -42,7 +42,7 @@ namespace vison5708Main {
 	// frontCamera is 0, back is 1
 	cv::VideoCapture frontCamera, backCamera;
 	volatile bool usingFront = true, oneCamera = false;
-	RioNetworking networkClass;
+	static std::shared_ptr<NetworkTable> table;
 	// if oneCamera is true, backMat is empty
 	cv::Mat frontMat, backMat;
 	long frontMatTimestamp, backMatTimestamp;
@@ -103,12 +103,7 @@ namespace vison5708Main {
 			long timestamp = getTime().count();
 			
 			
-			if ((usingFront || oneCamera) && readFront) {
-				networkClass.pushFrame(frontMat);
-				
-			}
-			else if (!usingFront && readBack) {
-				networkClass.pushFrame(backMat);
+			if (!usingFront && readBack) {
 				addJob(frontMat, timestamp);
 			}
 			
@@ -130,7 +125,10 @@ namespace vison5708Main {
 			int frameTimestamp = visionThreads[id].nextFrameTimestamp;
 			
 			threadPoolMutex.unlock();
-			networkClass.pushVisionOutput(gearTarget(&workingData), frameTimestamp);
+			table->PutNumber("xDist",gearTarget(&workingData).xDistance);
+			table->PutNumber("yDist",gearTarget(&workingData).yDistance);
+			table->PutNumber("angle",gearTarget(&workingData).robotAngle);
+			table->PutNumber("Dist",gearTarget(&workingData).distance);
 			threadPoolMutex.lock();
 			
 			visionThreads[id].running = false;
@@ -154,7 +152,7 @@ namespace vison5708Main {
 	
 	
 	int run() {
-		if (!backCamera.open(0)) oneCamera = true;
+		/*if (!backCamera.open(0)) oneCamera = true;
 		
 		if (!frontCamera.open(1) && !oneCamera) {
 			oneCamera = true;
@@ -164,7 +162,10 @@ namespace vison5708Main {
 			printf("no cameras detected\n");
 			return 1;
 		}
-		networkClass.changeCameras = &changeCameras;
+		//networkClass.changeCameras = &changeCameras;*/
+		NetworkTable::SetClientMode();
+		NetworkTable::SetIPAddress("10.20.53.21");
+		table = NetworkTable::GetTable("Vision");
 		
 		
 		captureFrames();
