@@ -39,7 +39,10 @@ inch tapeBottomHeight = 10.75;
 inch tapeHeight = 5;
 inch tapeWidth = 2;
 inch tapeApart = 10.25; // from outside of tape
-radian cameraFOV = 0.25*2*M_PI; // need exact value
+//radian cameraFOVHorizontal = (50/360)*2*M_PI; // may be approximations
+//radian cameraFOVVertical = (30/60)*2*M_PI;
+radian cameraFOVHorizontal = ((60/sqrt(337)*16)/360)*2*M_PI;
+radian cameraFOVVertical = ((60/sqrt(337)*9)/360)*2*M_PI;
 
 inch groundToTapeTop = tapeBottomHeight + tapeHeight;
 inch tapeBottomToCamera = cameraHeight - tapeBottomHeight;
@@ -81,8 +84,8 @@ visionOutput gearTarget(cv::Mat* image) {
 				(i.x + i.width) < j.x) {
 				
 				
-				radian width = (j.x + j.width - i.x) / (double)imageSize.width * cameraFOV;
-				radian height = (i.height + j.height) / 2.0 / (double)imageSize.height * cameraFOV;
+				radian width = (j.x + j.width - i.x) / (double)imageSize.width * cameraFOVHorizontal;
+				radian height = (i.height + j.height) / 2.0 / (double)imageSize.height * cameraFOVVertical;
 				
 				// if camera height is within tape bounds
 				//inch distance = (tapeHeight*tan(height)) / (1.0 - tapeBottomToCamera*cameraToTapeTop);
@@ -96,7 +99,7 @@ visionOutput gearTarget(cv::Mat* image) {
 				
 				
 				double distance = (tapeHeight + sqdis)/(2*tanh);
-				// I don't think this is ness``ecary, but never know
+				// I don't think this is nessecary, but never know
 				//double distance2 = (tapeHeight - sqdis)/(2*tanh);
 				
 				radian viewAngle = cos(tapeApart / 2 / distance);
@@ -105,12 +108,12 @@ visionOutput gearTarget(cv::Mat* image) {
 				inch yDistance = sin(viewAngle/2.0)*distance;
 				
 				//               midpoint of tapes                self-explainatory        center=0
-				radian robotAngle = ((i.x + (j.x + j.width)) / 2.0 / (double)imageSize.width - 0.5) * 2.0 * cameraFOV;
+				radian robotAngle = ((i.x + (j.x + j.width)) / 2.0 / (double)imageSize.width - 0.5) * 2.0 * cameraFOVHorizontal;
 				
 				double nanCheck = distance * xDistance * yDistance * robotAngle;
 				if (!isnan(nanCheck) && !isinf(nanCheck) &&
 					distance > 1.5 &&
-						around(robotAngle, 0.0, cameraFOV/2)) {
+						around(robotAngle, 0.0, cameraFOVHorizontal/2)) {
 					
 					candidates.push_back({false, distance, xDistance, yDistance, robotAngle, i, j});
 				}
@@ -125,8 +128,8 @@ visionOutput gearTarget(cv::Mat* image) {
 	FOREACH(candidates, i) {
 		double senseScore = 0;
 		
-		radian heightDifference = i->leftRect.height - i->rightRect.height / (double)imageSize.height * cameraFOV;
-		radian widthDifference = i->leftRect.width - i->rightRect.width / (double)imageSize.width * cameraFOV;
+		radian heightDifference = i->leftRect.height - i->rightRect.height / (double)imageSize.height * cameraFOVVertical;
+		radian widthDifference = i->leftRect.width - i->rightRect.width / (double)imageSize.width * cameraFOVHorizontal;
 		
 		senseScore -= heightDifference / tapeHeight + widthDifference /tapeWidth;
 		

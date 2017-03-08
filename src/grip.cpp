@@ -1,6 +1,5 @@
-#include "contours processing.hpp"
+#include "grip.hpp"
 
-#include "contours processing.hpp"
 
 namespace grip {
 	

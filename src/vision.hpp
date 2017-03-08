@@ -2,7 +2,7 @@
 #define vision_hpp
 
 #include <opencv2/opencv.hpp>
-#include "contours processing.hpp"
+#include "grip.hpp"
 
 typedef double inch;
 typedef double radian;
