@@ -122,22 +122,27 @@ namespace vison5708Main {
 			
 			visionThreads[id].running = true;
 			cv::Mat workingData = visionThreads[id].nextFrame;
-			int frameTimestamp = visionThreads[id].nextFrameTimestamp;
+			long frameTimestamp = visionThreads[id].nextFrameTimestamp;
 			
 			threadPoolMutex.unlock();
-			table->PutNumber("xDist",gearTarget(&workingData).xDistance);
-			table->PutNumber("yDist",gearTarget(&workingData).yDistance);
-			table->PutNumber("angle",gearTarget(&workingData).robotAngle);
-			table->PutNumber("Dist",gearTarget(&workingData).distance);
+			
+			// this is a computation-heavy function, don't call it four times!
+			visionOutput output = gearTarget(&workingData);
+			
+			table->PutNumber("xDist", output.xDistance);
+			table->PutNumber("yDist", output.yDistance);
+			table->PutNumber("angle", output.robotAngle);
+			table->PutNumber("Dist", output.distance);
+			
 			threadPoolMutex.lock();
 			
 			visionThreads[id].running = false;
 			
-			// do we have a new frame
+			// do we not have a new frame
 			if (visionThreads[id].nextFrameTimestamp == frameTimestamp) {
 				threadPoolMutex.unlock();
 				
-				// not optimal, but...
+				// hack, don't do this
 				
 				visionThreads[id].waitMutex.lock();
 				visionThreads[id].waitMutex.lock();
@@ -163,8 +168,12 @@ namespace vison5708Main {
 			return 1;
 		}
 		//networkClass.changeCameras = &changeCameras;*/
+		frontCamera.open(0);
+		oneCamera = true;
+		usingFront = true;
+		
 		NetworkTable::SetClientMode();
-		NetworkTable::SetIPAddress("10.20.53.21");
+		NetworkTable::SetIPAddress("10.57.8.21");
 		table = NetworkTable::GetTable("Vision");
 		
 		
