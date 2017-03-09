@@ -173,7 +173,9 @@ namespace vison5708Main {
 		usingFront = true;
 		
 		NetworkTable::SetClientMode();
-		NetworkTable::SetIPAddress("10.57.8.21");
+		
+		//this puts me on edge
+		NetworkTable::SetIPAddresses({"10.57.8.21", "10.57.8.22", "10.57.8.23"});
 		table = NetworkTable::GetTable("Vision");
 		
 		
