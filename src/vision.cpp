@@ -102,10 +102,17 @@ visionOutput gearTarget(cv::Mat* image) {
 				// I don't think this is nessecary, but never know
 				//double distance2 = (tapeHeight - sqdis)/(2*tanh);
 				
-				radian viewAngle = cos(tapeApart / 2 / distance);
+				radian viewAngle = cos(tapeApart / 2.0 / distance);
 				
 				inch xDistance = cos(viewAngle/2.0)*distance;
 				inch yDistance = sin(viewAngle/2.0)*distance;
+				
+				radian straightViewAngle = M_PI/2.0 - viewAngle;
+				// the best I could do
+				if (i.height > j.height){
+					xDistance = -xDistance;
+					straightViewAngle = -straightViewAngle;
+				}
 				
 				//               midpoint of tapes                self-explainatory        center=0
 				radian robotAngle = ((i.x + (j.x + j.width)) / 2.0 / (double)imageSize.width - 0.5) * 2.0 * cameraFOVHorizontal;
@@ -115,7 +122,7 @@ visionOutput gearTarget(cv::Mat* image) {
 					distance > 1.5 &&
 						around(robotAngle, 0.0, cameraFOVHorizontal/2)) {
 					
-					candidates.push_back({false, distance, xDistance, yDistance, robotAngle, i, j});
+					candidates.push_back({false, distance, xDistance, yDistance, robotAngle, straightViewAngle, i, j});
 				}
 			}
 		}

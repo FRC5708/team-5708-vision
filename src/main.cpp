@@ -131,7 +131,7 @@ namespace vison5708Main {
 			
 			table->PutNumber("xDist", output.xDistance);
 			table->PutNumber("yDist", output.yDistance);
-			table->PutNumber("angle", output.robotAngle);
+			table->PutNumber("viewAngle", output.viewAngle);
 			table->PutNumber("Dist", output.distance);
 			
 			threadPoolMutex.lock();
@@ -175,7 +175,7 @@ namespace vison5708Main {
 		NetworkTable::SetClientMode();
 		
 		//this puts me on edge
-		NetworkTable::SetIPAddresses({"10.57.8.21", "10.57.8.22", "10.57.8.23"});
+		NetworkTable::SetIPAddress({"10.57.8.21", "10.57.8.22", "10.57.8.23"});
 		table = NetworkTable::GetTable("Vision");
 		
 		

@@ -26,6 +26,8 @@ struct visionOutput {
 	//the angle that the robot is from directly facing the tapes. (positive clockwise, negative counterclockwise)
 	const radian robotAngle;
 	
+	const radian viewAngle;
+	
 	cv::Rect leftRect;
 	cv::Rect rightRect;
 };
