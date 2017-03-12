@@ -34,23 +34,24 @@ template<typename T> inline bool around(T val1, T val2, T tolerance) {
 }
 
 //CONSTANTS
-inch cameraHeight = 9.5; // need exact value
-inch tapeBottomHeight = 10.75;
-inch tapeHeight = 5;
-inch tapeWidth = 2;
-inch tapeApart = 10.25; // from outside of tape
+const inch cameraHeight = 9.5; // need exact value
+const inch tapeBottomHeight = 10.75;
+const inch tapeHeight = 5;
+const inch tapeWidth = 2;
+const inch tapeApart = 10.25; // from outside of tape
 //radian cameraFOVHorizontal = (50/360)*2*M_PI; // may be approximations
 //radian cameraFOVVertical = (30/60)*2*M_PI;
-radian cameraFOVHorizontal = ((60/sqrt(337)*16)/360)*2*M_PI;
-radian cameraFOVVertical = ((60/sqrt(337)*9)/360)*2*M_PI;
+const radian cameraFOVHorizontal = (48.0/360.0)*2*M_PI;
+const radian cameraFOVVertical = (36.0/360.0)*2*M_PI;
 
-inch groundToTapeTop = tapeBottomHeight + tapeHeight;
-inch tapeBottomToCamera = cameraHeight - tapeBottomHeight;
-inch cameraToTapeTop = groundToTapeTop - cameraHeight;
+const inch groundToTapeTop = tapeBottomHeight + tapeHeight;
+const inch tapeBottomToCamera = cameraHeight - tapeBottomHeight;
+const inch cameraToTapeTop = groundToTapeTop - cameraHeight;
 
 
 //todo: perspective distortion correction
 visionOutput gearTarget(cv::Mat* image) {
+	
 	cv::Size imageSize = image->size();
 	
 	grip::ContourGrip finder;
@@ -68,9 +69,9 @@ visionOutput gearTarget(cv::Mat* image) {
 	
 	
 	
-	int rectWidthTolerance = .05*imageSize.width;
-	int rectHeightTolerance = .2*imageSize.height;
-	int minRectHeight = 60;
+	const int rectWidthTolerance = .05*imageSize.width;
+	const int rectHeightTolerance = .2*imageSize.height;
+	const int minRectHeight = 60;
 	
 	// loop through all rects.
 	for (auto iP = rects.begin(); iP != rects.end(); ++iP) {

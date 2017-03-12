@@ -87,6 +87,8 @@ namespace vison5708Main {
 		visionThreads[bestThread].nextFrame = potentialJob;
 		visionThreads[bestThread].nextFrameTimestamp = timestamp;
 		if (!visionThreads[bestThread].running) visionThreads[bestThread].waitMutex.unlock();
+		
+		threadPoolMutex.unlock();
 	}
 	
 	void captureFrames() {
@@ -129,10 +131,14 @@ namespace vison5708Main {
 			// this is a computation-heavy function, don't call it four times!
 			visionOutput output = gearTarget(&workingData);
 			
-			table->PutNumber("xDist", output.xDistance);
-			table->PutNumber("yDist", output.yDistance);
-			table->PutNumber("viewAngle", output.viewAngle);
-			table->PutNumber("Dist", output.distance);
+			table->PutBoolean("succeeded", !output.failure);
+			
+			if (!output.failure) {
+				table->PutNumber("xDist", output.xDistance);
+				table->PutNumber("yDist", output.yDistance);
+				table->PutNumber("viewAngle", output.viewAngle);
+				table->PutNumber("Dist", output.distance);
+			}
 			
 			threadPoolMutex.lock();
 			
@@ -169,6 +175,9 @@ namespace vison5708Main {
 		}
 		//networkClass.changeCameras = &changeCameras;*/
 		frontCamera.open(0);
+		frontCamera.set(CV_CAP_PROP_FRAME_WIDTH,320);
+		frontCamera.set(CV_CAP_PROP_FRAME_HEIGHT,240);
+		
 		oneCamera = true;
 		usingFront = true;
 		
