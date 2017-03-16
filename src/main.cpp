@@ -19,21 +19,14 @@ cv::Mat dummyImage() {
 }
 
 
-void dump(visionOutput toDump) {
-	printf("\nfailed: %s\n\
-distance: %f\n\
-x distance: %f\n\
-y distance: %f\n\
-robot angle: %f\n",
-		   (toDump.failure? "true" : "false"), toDump.distance, toDump.xDistance, toDump.yDistance, toDump.robotAngle);
-}
-
 int main() {
 	
 	cv::Mat image = dummyImage();
 	dump(gearTarget(&image));
 }
 */
+
+
 
 namespace vison5708Main {
 
@@ -50,9 +43,9 @@ namespace vison5708Main {
 	
 	
 	struct VisionThread {
-		bool running;
+		bool running = false;
 		cv::Mat nextFrame;
-		long nextFrameTimestamp;
+		long nextFrameTimestamp = -1;
 		
 		// probably would be better with semaphores
 		std::mutex waitMutex;
@@ -64,11 +57,24 @@ namespace vison5708Main {
 		return std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::steady_clock::now().time_since_epoch());
 	}
 	
+
+
+	void dump(visionOutput toDump) {
+		printf("\nfailed: %s\n\
+	distance: %f\n\
+	x distance: %f\n\
+	y distance: %f\n\
+	robot angle: %f\n\
+	view angle: %f\n",
+			   (toDump.failure? "true" : "false"), toDump.distance, toDump.xDistance, toDump.yDistance, toDump.robotAngle, toDump.viewAngle);
+	}
+	
 	void changeCameras() {
 		if (!oneCamera) usingFront = !usingFront;
 	}
 	
 	void addJob(cv::Mat potentialJob, long timestamp) {
+		printf("adding job\n");
 		threadPoolMutex.lock();
 		
 		int bestThread = 0;
@@ -92,8 +98,11 @@ namespace vison5708Main {
 	}
 	
 	void captureFrames() {
+		printf("starting capture\n");
+		
 		while(true) {
 			bool readFront = false, readBack = false;
+
 			
 			if (!oneCamera) {
 				readFront = frontCamera.read(frontMat);
@@ -104,12 +113,9 @@ namespace vison5708Main {
 			
 			long timestamp = getTime().count();
 			
-			
-			if (!usingFront && readBack) {
-				addJob(frontMat, timestamp);
-			}
-			
-			
+			printf("frames: front: %i back: %i\n", readFront, readBack);
+			if (readFront) addJob(frontMat, timestamp);
+
 			// 5 milliseconds
 			usleep(5000);
 		}
@@ -117,28 +123,10 @@ namespace vison5708Main {
 	
 	
 	void visionThreadRun(int id) {
+		std::cout << "starting vision thread" << std::endl;
 		
 		while(true) {
-			
-			threadPoolMutex.lock();
-			
-			visionThreads[id].running = true;
-			cv::Mat workingData = visionThreads[id].nextFrame;
-			long frameTimestamp = visionThreads[id].nextFrameTimestamp;
-			
-			threadPoolMutex.unlock();
-			
-			// this is a computation-heavy function, don't call it four times!
-			visionOutput output = gearTarget(&workingData);
-			
-			table->PutBoolean("succeeded", !output.failure);
-			
-			if (!output.failure) {
-				table->PutNumber("xDist", output.xDistance);
-				table->PutNumber("yDist", output.yDistance);
-				table->PutNumber("viewAngle", output.viewAngle);
-				table->PutNumber("Dist", output.distance);
-			}
+			long frameTimestamp = -1;
 			
 			threadPoolMutex.lock();
 			
@@ -149,7 +137,6 @@ namespace vison5708Main {
 				threadPoolMutex.unlock();
 				
 				// hack, don't do this
-				
 				visionThreads[id].waitMutex.lock();
 				visionThreads[id].waitMutex.lock();
 				visionThreads[id].waitMutex.unlock();
@@ -157,6 +144,30 @@ namespace vison5708Main {
 			else {
 				threadPoolMutex.unlock();
 			}
+			
+			
+			threadPoolMutex.lock();
+			
+			visionThreads[id].running = true;
+			cv::Mat workingData = visionThreads[id].nextFrame;
+			frameTimestamp = visionThreads[id].nextFrameTimestamp;
+			
+			threadPoolMutex.unlock();
+			
+			// this is a computation-heavy function, don't call it four times!
+			visionOutput output = gearTarget(&workingData);
+			dump(output);
+			
+			/*table->PutBoolean("succeeded", !output.failure);
+			
+			if (!output.failure) {
+				
+				table->PutNumber("xDist", output.xDistance);
+				table->PutNumber("yDist", output.yDistance);
+				table->PutNumber("viewAngle", output.viewAngle);
+				table->PutNumber("Dist", output.distance);
+			}*/
+			
 		}
 	}
 	
@@ -174,18 +185,31 @@ namespace vison5708Main {
 			return 1;
 		}
 		//networkClass.changeCameras = &changeCameras;*/
-		frontCamera.open(0);
+		
+		bool success = false;
+		 while (!success) {
+			success = frontCamera.open(0);
+			 std::cout << "camera opening " << (success? "succeeded" : "failed") << std::endl;
+			if (!success) usleep(200000); // 200 ms
+		}
+		
 		frontCamera.set(CV_CAP_PROP_FRAME_WIDTH,320);
 		frontCamera.set(CV_CAP_PROP_FRAME_HEIGHT,240);
+		//frontCamera.set(CV_CAP_PROP_EXPOSURE, )
 		
 		oneCamera = true;
 		usingFront = true;
 		
 		NetworkTable::SetClientMode();
 		
+		for (int i = 0; i != WORKER_THREAD_COUNT; ++i) {
+			std::thread thread(visionThreadRun, i);
+			thread.detach();
+		}
+		
 		//this puts me on edge
-		NetworkTable::SetIPAddress({"10.57.8.21", "10.57.8.22", "10.57.8.23"});
-		table = NetworkTable::GetTable("Vision");
+		//NetworkTable::SetIPAddress({"10.57.8.21", "10.57.8.22", "10.57.8.23"});
+		//table = NetworkTable::GetTable("Vision");
 		
 		
 		captureFrames();

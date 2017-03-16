@@ -51,8 +51,9 @@ const inch cameraToTapeTop = groundToTapeTop - cameraHeight;
 
 //todo: perspective distortion correction
 visionOutput gearTarget(cv::Mat* image) {
-	
 	cv::Size imageSize = image->size();
+	
+	printf("processing image: width: %d height: %d\n", imageSize.width, imageSize.height);
 	
 	grip::ContourGrip finder;
 	
@@ -103,10 +104,12 @@ visionOutput gearTarget(cv::Mat* image) {
 				// I don't think this is nessecary, but never know
 				//double distance2 = (tapeHeight - sqdis)/(2*tanh);
 				
-				radian viewAngle = cos(tapeApart / 2.0 / distance);
+				// law of sines
+				double sineRatio = sin(width/2.0) / (tapeApart/2.0);
+				radian viewAngle = M_PI - asin(sineRatio*distance) - width/2.0;
 				
-				inch xDistance = cos(viewAngle/2.0)*distance;
-				inch yDistance = sin(viewAngle/2.0)*distance;
+				inch xDistance = cos(viewAngle)*distance;
+				inch yDistance = sin(viewAngle)*distance;
 				
 				radian straightViewAngle = M_PI/2.0 - viewAngle;
 				// the best I could do
@@ -123,7 +126,8 @@ visionOutput gearTarget(cv::Mat* image) {
 					distance > 1.5 &&
 						around(robotAngle, 0.0, cameraFOVHorizontal/2)) {
 					
-					candidates.push_back({false, distance, xDistance, yDistance, robotAngle, straightViewAngle, i, j});
+					visionOutput toAdd = {false, distance, xDistance, yDistance, robotAngle, straightViewAngle, i, j};
+					candidates.push_back(toAdd);
 				}
 			}
 		}
@@ -153,7 +157,7 @@ visionOutput gearTarget(cv::Mat* image) {
 	}
 	
 	// failure value
-	return {true};
+	return {true, NAN, NAN, NAN, NAN, NAN};
 }
 
 

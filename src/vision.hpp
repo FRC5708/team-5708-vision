@@ -12,7 +12,7 @@ typedef double radian;
 struct visionOutput {
 	
 	//if true, other values may be uninitalized.
-	bool failure;
+	const bool failure;
 	
 	// distance from the camera to the point directly in-between the tapes at the same height of the camera.
 	const inch distance;
@@ -28,8 +28,8 @@ struct visionOutput {
 	
 	const radian viewAngle;
 	
-	cv::Rect leftRect;
-	cv::Rect rightRect;
+	const cv::Rect leftRect;
+	const cv::Rect rightRect;
 };
 
 visionOutput gearTarget(cv::Mat* image);
