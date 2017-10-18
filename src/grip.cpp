@@ -1,6 +1,5 @@
-#include "contours processing.hpp"
+#include "grip.hpp"
 
-#include "contours processing.hpp"
 
 namespace grip {
 	
@@ -15,7 +14,7 @@ namespace grip {
 		cv::Mat hslThresholdInput = source0;
 		double hslThresholdHue[] = {0.0, 180.0};
 		double hslThresholdSaturation[] = {0.0, 255.0};
-		double hslThresholdLuminance[] = {229.31654676258992, 255.0};
+		double hslThresholdLuminance[] = {150, 255.0};
 		hslThreshold(hslThresholdInput, hslThresholdHue, hslThresholdSaturation, hslThresholdLuminance, this->hslThresholdOutput);
 		//Step Find_Contours0:
 		//input
