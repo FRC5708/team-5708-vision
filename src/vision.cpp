@@ -22,11 +22,7 @@ void debugRectDisplay(std::vector<cv::Rect> rects, cv::Size size) {
 	debugDisplayMat(drawing);
 }
 
-
-#define straightLineTolerance (50) //slope
-#define minLineLength (10) //pixels
-
-
+visionOutput visionFailure = {true, NAN, NAN, NAN, NAN, NAN};
 
 
 template<typename T> inline bool around(T val1, T val2, T tolerance) {
@@ -47,6 +43,38 @@ const radian cameraFOVVertical = (36.0/360.0)*2*M_PI;
 const inch groundToTapeTop = tapeBottomHeight + tapeHeight;
 const inch tapeBottomToCamera = cameraHeight - tapeBottomHeight;
 const inch cameraToTapeTop = groundToTapeTop - cameraHeight;
+
+
+visionOutput computeFromBox(radian robotAngle, radian width, radian heightLeft, radian heightRight) {
+	radian height = (heightLeft + heightRight)/2.0;
+	
+	double sqdis = sqrt(pow(tapeHeight, 2) + 4*tapeBottomToCamera*cameraToTapeTop*pow(tan(height), 2));
+	inch distance = (tapeHeight + sqdis)/(2*tan(height));
+	
+	// law of sines
+	double sineRatio = sin(width/2.0) / (tapeApart/2.0);
+	radian viewAngle = M_PI - asin(sineRatio*distance) - width/2.0;
+	
+	inch xDistance = cos(viewAngle)*distance;
+	inch yDistance = sin(viewAngle)*distance;
+	
+	radian straightViewAngle = M_PI/2.0 - viewAngle;
+	// the best I could do
+	if (heightLeft > heightRight){
+		xDistance = -xDistance;
+		straightViewAngle = -straightViewAngle;
+	}
+	
+	
+	double nanCheck = distance * xDistance * yDistance * robotAngle;
+	if (!isnan(nanCheck) && !isinf(nanCheck) &&
+		distance > 1.5 &&
+		around(robotAngle, 0.0, cameraFOVHorizontal/2)) {
+		
+		return {false, distance, xDistance, yDistance, robotAngle, straightViewAngle};
+	}
+	else return visionFailure;
+}
 
 
 //todo: perspective distortion correction
@@ -87,47 +115,18 @@ visionOutput gearTarget(cv::Mat* image) {
 				
 				
 				radian width = (j.x + j.width - i.x) / (double)imageSize.width * cameraFOVHorizontal;
-				radian height = (i.height + j.height) / 2.0 / (double)imageSize.height * cameraFOVVertical;
 				
-				// if camera height is within tape bounds
-				//inch distance = (tapeHeight*tan(height)) / (1.0 - tapeBottomToCamera*cameraToTapeTop);
-				//if camera is below tapes (never mind, doesn't work, above does, even with low cam) ??
-				//inch distance2 = (tapeHeight*tan(height)) / (1.0 + tapeBottomToCamera*cameraToTapeTop);
-				
-				//double b = tapeHeight / tan(height);
-				//double sqdis = sqrt(b*b + 4*tapeBottomHeight*cameraToTapeTop);
-				double tanh = tan(height);
-				double sqdis = sqrt(pow(tapeHeight, 2) + 4*tapeBottomToCamera*cameraToTapeTop*pow(tanh, 2));
-				
-				
-				double distance = (tapeHeight + sqdis)/(2*tanh);
-				// I don't think this is nessecary, but never know
-				//double distance2 = (tapeHeight - sqdis)/(2*tanh);
-				
-				// law of sines
-				double sineRatio = sin(width/2.0) / (tapeApart/2.0);
-				radian viewAngle = M_PI - asin(sineRatio*distance) - width/2.0;
-				
-				inch xDistance = cos(viewAngle)*distance;
-				inch yDistance = sin(viewAngle)*distance;
-				
-				radian straightViewAngle = M_PI/2.0 - viewAngle;
-				// the best I could do
-				if (i.height > j.height){
-					xDistance = -xDistance;
-					straightViewAngle = -straightViewAngle;
-				}
+				radian heightLeft =  i.height / (double)imageSize.height * cameraFOVVertical;
+				radian heightRight = j.height / (double)imageSize.height * cameraFOVVertical;
 				
 				//               midpoint of tapes                self-explainatory        center=0
 				radian robotAngle = ((i.x + (j.x + j.width)) / 2.0 / (double)imageSize.width - 0.5) * 2.0 * cameraFOVHorizontal;
-				
-				double nanCheck = distance * xDistance * yDistance * robotAngle;
-				if (!isnan(nanCheck) && !isinf(nanCheck) &&
-					distance > 1.5 &&
-						around(robotAngle, 0.0, cameraFOVHorizontal/2)) {
-					
-					visionOutput toAdd = {false, distance, xDistance, yDistance, robotAngle, straightViewAngle, i, j};
-					candidates.push_back(toAdd);
+
+				visionOutput potential = computeFromBox(robotAngle, width, heightLeft, heightRight);
+				if (!potential.failure) {
+					potential.leftRect = i;
+					potential.rightRect = j;
+					candidates.push_back(potential);
 				}
 			}
 		}
@@ -157,7 +156,8 @@ visionOutput gearTarget(cv::Mat* image) {
 	}
 	
 	// failure value
-	return {true, NAN, NAN, NAN, NAN, NAN};
+	return visionFailure;
 }
+
 
 

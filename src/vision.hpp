@@ -12,24 +12,24 @@ typedef double radian;
 struct visionOutput {
 	
 	//if true, other values may be uninitalized.
-	const bool failure;
+	bool failure;
 	
 	// distance from the camera to the point directly in-between the tapes at the same height of the camera.
-	const inch distance;
+	inch distance;
 	
 	//distance from the camera to the closest point directly in front of the tapes.
-	const inch xDistance;
+	inch xDistance;
 	
 	//distance from the camera to the closest point on a horizontal line at the height of the camera crossing directly through the tapes.
-	const inch yDistance;
+	inch yDistance;
 	
 	//the angle that the robot is from directly facing the tapes. (positive clockwise, negative counterclockwise)
-	const radian robotAngle;
+	radian robotAngle;
 	
-	const radian viewAngle;
+	radian viewAngle;
 	
-	const cv::Rect leftRect;
-	const cv::Rect rightRect;
+	cv::Rect leftRect;
+	cv::Rect rightRect;
 };
 
 visionOutput gearTarget(cv::Mat* image);
